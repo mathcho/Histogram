@@ -5,18 +5,24 @@ from streamlit_folium import folium_static
 import matplotlib.pyplot as plt
 from matplotlib import rc
 import os
-import time
+import subprocess
 
-# 한글 폰트 설정
-if not os.path.exists('/usr/share/fonts/truetype/nanum/NanumGothic.ttf'):
-    os.system("apt-get update && apt-get install -y fonts-nanum")
-    os.system("fc-cache -fv")
+# 한글 폰트 설치 및 설정
+def setup_font():
+    # NanumGothic 설치 확인
+    font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
+    if not os.path.exists(font_path):
+        with st.spinner("NanumGothic 폰트를 설치 중입니다..."):
+            os.system("apt-get update")
+            os.system("apt-get install -y fonts-nanum")
+            os.system("fc-cache -fv")
+    # 폰트 적용
+    import matplotlib.font_manager as fm
+    fontprop = fm.FontProperties(fname=font_path)
+    rc('font', family=fontprop.get_name())
+    plt.rcParams['axes.unicode_minus'] = False
 
-import matplotlib.font_manager as fm
-font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
-fontprop = fm.FontProperties(fname=font_path)
-rc('font', family=fontprop.get_name())
-plt.rcParams['axes.unicode_minus'] = False
+setup_font()
 
 # Streamlit 상태 관리
 if "ID" not in st.session_state:
@@ -125,26 +131,3 @@ for _, row in filtered_data.iterrows():
 
 st.subheader("선택한 계급 범위에 해당하는 지하철 역")
 folium_static(m)
-
-# 퀴즈 5 처리
-st.markdown(f'퀴즈 5 : 앞서 퀴즈 3에서 답을 했듯이 수도권에 {st.session_state["quiz3_input"]}개의 자선냄비를 설치한다면, 그 위치와 설치 기준은 무엇인지 히스토그램과 지도를 바탕으로 설명하시오.')
-
-quiz_input5 = st.text_area("<3에서 답한 개수가 필요한 이유> :", placeholder="50자 이상의 문장을 작성하세요!", height=100)
-
-if st.button("퀴즈 5 확인"):
-    text_length5 = len(quiz_input5.strip())
-    if text_length5 >= 50:
-        if "상대도수" in quiz_input5:
-            st.success("다음 내용으로 넘어가세요!")
-            progress_text = "로딩중."
-            my_bar3 = st.progress(0, text=progress_text)
-            for percent_complete in range(100):
-                time.sleep(0.01)
-                my_bar3.progress(percent_complete + 1, text=progress_text)
-                time.sleep(1)
-                my_bar3.empty()
-                st.success("퀴즈 5가 완료되었습니다!")
-        else:
-            st.error('"상대도수" 개념을 포함하여 50글자 이상으로 답하시오!')
-    else:
-        st.error(f"작성한 내용은 {text_length5}글자입니다. 50글자 이상 작성하세요.")
