@@ -5,23 +5,21 @@ from streamlit_folium import folium_static
 import matplotlib.pyplot as plt
 from matplotlib import rc
 import os
-import subprocess
 
-# 한글 폰트 설치 및 설정
+# 한글 폰트 설정
 def setup_font():
-    # NanumGothic 설치 확인
     font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
     if not os.path.exists(font_path):
-        with st.spinner("NanumGothic 폰트를 설치 중입니다..."):
-            os.system("apt-get update")
-            os.system("apt-get install -y fonts-nanum")
-            os.system("fc-cache -fv")
-    # 폰트 적용
+        st.error("NanumGothic 폰트를 찾을 수 없습니다. 폰트를 설치하세요.")
+        return
+
+    # matplotlib에 폰트 적용
     import matplotlib.font_manager as fm
     fontprop = fm.FontProperties(fname=font_path)
     rc('font', family=fontprop.get_name())
     plt.rcParams['axes.unicode_minus'] = False
 
+# 폰트 설정
 setup_font()
 
 # Streamlit 상태 관리
@@ -97,37 +95,3 @@ else:
     ax.grid(True, linestyle='--', alpha=0.6)
 
     st.pyplot(fig)
-
-# 선택한 계급에 따른 데이터 필터링
-selected_bins = st.sidebar.multiselect(
-    "지도에 표시할 계급 범위 선택",
-    options=[f"{int(bin_edges[i])} ~ {int(bin_edges[i + 1])}" for i in range(len(bin_edges) - 1)],
-    default=[]
-)
-
-filtered_data = pd.DataFrame()
-for bin_range in selected_bins:
-    bin_start, bin_end = map(int, bin_range.split(" ~ "))
-    filtered_data = pd.concat([
-        filtered_data,
-        data[(data['★승하차 총 승객수★'] >= bin_start) & (data['★승하차 총 승객수★'] < bin_end)]
-    ])
-
-# 선택된 데이터를 지도에 표시
-m = folium.Map(location=[37.5665, 126.9780], zoom_start=11)
-
-for _, row in filtered_data.iterrows():
-    if not pd.isnull(row['위도']) and not pd.isnull(row['경도']):
-        popup = folium.Popup(f"<div style='white-space: nowrap;'>{row['★지하철 역명★']}</div>", max_width=200)
-        folium.CircleMarker(
-            location=[row['위도'], row['경도']],
-            radius=7,
-            color="blue",
-            fill=True,
-            fill_color="blue",
-            fill_opacity=0.7,
-            popup=popup
-        ).add_to(m)
-
-st.subheader("선택한 계급 범위에 해당하는 지하철 역")
-folium_static(m)
